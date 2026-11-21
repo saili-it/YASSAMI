@@ -42,6 +42,31 @@ class StorefrontTest extends TestCase
         $this->get(route('cart'))->assertOk();
     }
 
+    public function test_floating_whatsapp_button(): void
+    {
+        $product = $this->product('Legging Alpha', 300);
+
+        // Sans numéro : aucun bouton (jamais de numéro inventé).
+        config(['yassami.whatsapp_number' => '']);
+        $this->get('/')->assertOk()->assertDontSee('data-whatsapp-float', false);
+
+        config(['yassami.whatsapp_number' => '212612345678']);
+
+        foreach (['/', route('shop.index'), route('cart')] as $url) {
+            $this->get($url)->assertOk()
+                ->assertSee('data-whatsapp-float', false)
+                ->assertSee('https://wa.me/212612345678?text='.rawurlencode('Bonjour YASSAMI, j’ai une question.'), false);
+        }
+
+        // Fiche produit : le message cite le produit, sa référence et son lien.
+        $message = 'Bonjour, je suis intéressé(e) par « Legging Alpha » (réf. '.$product->sku.') : '.route('products.show', $product);
+        $this->get(route('products.show', $product))->assertOk()
+            ->assertSee('https://wa.me/212612345678?text='.rawurlencode($message), false);
+
+        // Jamais dans l'administration.
+        $this->get(route('admin.login'))->assertOk()->assertDontSee('data-whatsapp-float', false);
+    }
+
     public function test_inactive_products_and_categories_are_hidden(): void
     {
         $hidden = $this->product('Legging Cachee', 300, ['is_active' => false]);

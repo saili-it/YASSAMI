@@ -3,6 +3,8 @@
     'description' => config('yassami.brand').' — vêtements et accessoires de sport premium. Commandez en quelques clics, partout au Maroc.',
     'canonical' => null,
     'image' => null,
+    // Message pré-rempli du bouton WhatsApp flottant (null = message générique).
+    'whatsappMessage' => null,
 ])
 
 @php
@@ -52,6 +54,8 @@
     @include('layouts.partials.footer')
     @include('layouts.partials.mobile-menu')
     @include('layouts.partials.cart-drawer')
+
+    <x-whatsapp-float :message="$whatsappMessage" />
 
     {{-- Notification d'ajout au panier --}}
     <div x-cloak x-show="$store.cart.toast" x-transition.opacity.duration.200ms role="status" aria-live="polite"

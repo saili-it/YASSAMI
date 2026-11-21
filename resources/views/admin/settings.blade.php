@@ -61,7 +61,7 @@
             {{-- Commande WhatsApp --}}
             <section class="bg-white p-5 ring-1 ring-line sm:p-6">
                 <h2 class="text-sm font-semibold uppercase tracking-[0.08em]">Contact WhatsApp</h2>
-                <p class="mt-1 text-xs text-muted">Optionnel : affiche un lien « Nous écrire sur WhatsApp » dans le pied de page. Les commandes, elles, arrivent dans l’onglet Commandes.</p>
+                <p class="mt-1 text-xs text-muted">Affiche le bouton WhatsApp flottant sur toutes les pages de la boutique et le lien « Nous écrire sur WhatsApp » du pied de page. Sans numéro, ils sont masqués. Les commandes, elles, arrivent dans l’onglet Commandes.</p>
 
                 <div class="mt-5">
                     <label for="whatsapp_number" class="field-label">Numéro WhatsApp</label>

@@ -58,6 +58,7 @@ Custom Blade UI in the brand style (decision 2026-11-10: **custom, not Filament*
 - Products: a product cannot be activated (form or quick toggle) while its price is 0, so a draft can never be ordered for free. CRUD, filters (search, category, status), quick active/featured toggles, up to 10 photos (upload, drag & drop, reorder, delete), sizes (presets + custom), colors (name + color picker + presets), price/sale price with live discount preview, stock.
 - Uploaded images are resized to 1600 px max, EXIF-rotated and converted to WebP (`App\Services\ImageStorage`). Files are stored at `storage/app/public/products/{id}/` and `categories/`. Deleting a product or image deletes the files.
 - Destructive actions always go through a confirmation dialog (`<x-admin.confirm-delete>`).
+- **Floating WhatsApp button** (`<x-whatsapp-float>`, in `layouts/app` only, never in the admin; added 2026-11-21): square `bg-whatsapp` button bottom-right (z-45, below the menu/drawer, hidden while they are open), shown only when the WhatsApp number is set in Paramètres. Prefilled message: generic by default; on product pages, the layout prop `whatsapp-message` carries the product name, SKU and URL.
 - Settings (`/admin/parametres`, added 2026-11-11): **delivery fee** (fixed price for all of Morocco, accepts `35`, `35,50`, `35 DH`; 0 = free; empty = to confirm), WhatsApp contact number (optional, only for the footer "Nous écrire sur WhatsApp" link since 2026-11-18), contact phone/email/address, Instagram/Facebook/TikTok URLs. The WhatsApp number accepts any Moroccan format and is normalized to `212XXXXXXXXX`; the page has a "Tester" link.
 
 ### Business information — NEVER invent
@@ -268,7 +269,7 @@ Modern, premium, sporty, minimalist. Bold condensed italic headlines, strong hie
 | `line` | `#dedbd3` | borders |
 | `muted` | `#6c6a65` | secondary text |
 | `accent` | `#e2331b` | brand signature, discounts, promotions. The logo is monochrome, so this red is a site accent (to confirm with the client) |
-| `whatsapp` | `#1da851` | **reserved for WhatsApp actions** (footer contact link, admin "Écrire sur WhatsApp"). Ordering buttons use `btn-primary` |
+| `whatsapp` | `#1da851` | **reserved for WhatsApp actions** (floating button, footer contact link, admin "Écrire sur WhatsApp"). Ordering buttons use `btn-primary` |
 | `success` / `warning` | `#1e7a4c` / `#b26a00` | stock status |
 | `font-display` | Barlow Condensed 600–800 (+ italic) | `.display` headlines (uppercase) |
 | `font-sans` | Inter 400–700 | body text |

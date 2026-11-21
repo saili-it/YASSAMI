@@ -31,7 +31,8 @@
 @endphp
 
 <x-layouts.app :title="$product->name" :description="Str::limit(strip_tags((string) $product->description), 155)"
-               :canonical="route('products.show', $product)" :image="$product->primary_image_url">
+               :canonical="route('products.show', $product)" :image="$product->primary_image_url"
+               :whatsapp-message="'Bonjour, je suis intéressé(e) par « '.$product->name.' » (réf. '.$product->sku.') : '.route('products.show', $product)">
     @push('head')
         <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
     @endpush
