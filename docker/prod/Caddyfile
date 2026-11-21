@@ -1,0 +1,11 @@
+# YASSAMI — HTTPS automatique (certificats Let's Encrypt gérés par Caddy).
+# Prérequis : yassami.ma et www.yassami.ma pointent vers l'IP du serveur, ports 80/443 libres.
+
+yassami.ma {
+	encode zstd gzip
+	reverse_proxy web:80
+}
+
+www.yassami.ma {
+	redir https://yassami.ma{uri} permanent
+}

@@ -1,0 +1,98 @@
+# Nom distinct du dev (« yassami ») : lancé par erreur sur le PC, il ne touche jamais la base de dev.
+name: yassami-prod
+
+# ---------------------------------------------------------------------------
+# YASSAMI — PRODUCTION (serveur VPS). Voir DEPLOY.md.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml --profile caddy up -d --build   (HTTPS par Caddy)
+#
+# Le site écoute UNIQUEMENT sur 127.0.0.1:${HTTP_PORT} : le HTTPS est assuré soit
+# par le service « caddy » (serveur dédié), soit par le Nginx déjà installé sur l'hôte.
+# MySQL n'est jamais exposé sur Internet.
+# ---------------------------------------------------------------------------
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *restart
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+      target: app
+    image: yassami-app:latest
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+      - uploads:/var/www/html/storage/app/public
+      - logs:/var/www/html/storage/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      yassami:
+        aliases: [yassami-app]   # nom utilisé par nginx.conf (fastcgi_pass)
+
+  web:
+    <<: *restart
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+      target: web
+    image: yassami-web:latest
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8020}:80"
+    volumes:
+      - uploads:/var/www/html/storage/app/public:ro
+    depends_on: [app]
+    networks: [yassami]
+
+  mysql:
+    <<: *restart
+    image: mysql:8.0
+    # performance_schema coupé : ~300 Mo de RAM économisés sur un petit VPS.
+    command: >
+      --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      --performance-schema=OFF --innodb-buffer-pool-size=256M
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    networks: [yassami]
+
+  # HTTPS automatique (Let's Encrypt) — uniquement si les ports 80/443 sont libres sur le serveur.
+  caddy:
+    <<: *restart
+    image: caddy:2-alpine
+    profiles: [caddy]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/prod/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [web]
+    networks: [yassami]
+
+volumes:
+  mysql-data:
+  uploads:
+  logs:
+  caddy-data:
+  caddy-config:
+
+networks:
+  yassami:
+    driver: bridge

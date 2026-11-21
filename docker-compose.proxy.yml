@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# YASSAMI — branchement à un reverse proxy Docker DÉJÀ présent sur le serveur
+# (ex. le Nginx du projet scfderma qui occupe les ports 80/443).
+#
+# Activé automatiquement par les scripts deploy/*.sh quand PROXY_NETWORK est
+# renseigné dans .env. Seul le conteneur « web » (Nginx, sans code PHP ni base)
+# rejoint le réseau du proxy ; « app » et « mysql » restent sur le réseau privé.
+# Le proxy joint YASSAMI sous le nom « yassami-web ».
+# ---------------------------------------------------------------------------
+services:
+  web:
+    networks:
+      yassami: {}
+      proxy:
+        aliases: [yassami-web]
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?PROXY_NETWORK manquant dans .env}

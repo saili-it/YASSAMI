@@ -1,0 +1,37 @@
+# Contexte de build de l'image de PRODUCTION (docker/prod/Dockerfile).
+# Le développement local monte le code en volume : ce fichier ne le concerne pas.
+
+.git
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+node_modules
+vendor
+public/build
+public/hot
+public/storage
+public/fonts-manifest.dev.json
+
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*.php
+
+tests
+phpunit.xml
+.phpunit.cache
+products images
+releases
+backups
+*.tar.gz
+*.sql
+*.sql.gz
+
+.idea
+.vscode
+.cursor
+.codex
