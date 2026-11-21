@@ -32,14 +32,14 @@ for i in $(seq 1 60); do
     sleep 2
 done
 
-# Toujours en www-data : un fichier de log ou de cache créé par root bloquerait php-fpm.
-artisan() { su-exec www-data php artisan "$@"; }
+# Artisan en root : sur le serveur, .env est en chmod 600 (lisible par root seulement).
+# « optimize » met la configuration en cache : php-fpm (www-data) n'a ensuite plus besoin de lire .env.
+php artisan migrate --force
+php artisan storage:link >/dev/null 2>&1 || true
+php artisan optimize
 
-artisan migrate --force
-artisan storage:link >/dev/null 2>&1 || true
-
-# Caches de production (config, routes, vues, événements) : reconstruits à chaque démarrage.
-artisan optimize
+# Fichiers créés par root (logs, caches) rendus à www-data, sinon php-fpm ne pourrait plus y écrire.
+chown -R www-data:www-data storage bootstrap/cache
 
 log "YASSAMI prêt."
 exec "$@"

@@ -126,6 +126,8 @@ Then follow **section 2C** below (DNS check, Nginx blocks, certificate).
 
 #### 2C. Connect yassami.ma to the scfderma Nginx
 
+**Simplest:** `cd /opt/yassami && bash deploy/connect-scfderma-proxy.sh`. The script checks DNS and YASSAMI first, backs up the config, adds the blocks only once, runs `nginx -t` before each reload (and restores the backup on failure), gets the certificate and installs the renewal cron. The manual equivalent:
+
 ```bash
 CONF=/home/scfderma/docker/nginx/prod-ssl.conf
 getent hosts yassami.ma www.yassami.ma               # must show this VPS's IP, otherwise wait for DNS
