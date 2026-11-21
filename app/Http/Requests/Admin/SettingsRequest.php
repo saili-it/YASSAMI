@@ -19,13 +19,20 @@ class SettingsRequest extends FormRequest
             ->all();
 
         // Format attendu par wa.me : 212XXXXXXXXX
-        $this->merge($trimmed + ['whatsapp_number' => Phone::toInternational($this->input('whatsapp_number'))]);
+        // « 35 », « 35,50 », « 35 DH » → « 35.50 » ; vide = frais « à confirmer ».
+        $fee = trim(str_ireplace(['dh', ' '], '', (string) $this->input('delivery_fee')));
+
+        $this->merge($trimmed + [
+            'whatsapp_number' => Phone::toInternational($this->input('whatsapp_number')),
+            'delivery_fee' => $fee === '' ? null : str_replace(',', '.', $fee),
+        ]);
     }
 
     public function rules(): array
     {
         return [
             'whatsapp_number' => ['nullable', 'regex:/^212[5-7]\d{8}$/'],
+            'delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:9999'],
             'contact_phone' => ['nullable', 'string', 'max:30', 'regex:/^[\d\s+().-]+$/'],
             'contact_email' => ['nullable', 'email:rfc', 'max:150'],
             'contact_address' => ['nullable', 'string', 'max:255'],
@@ -48,6 +55,7 @@ class SettingsRequest extends FormRequest
     {
         return [
             'whatsapp_number' => 'numéro WhatsApp',
+            'delivery_fee' => 'frais de livraison',
             'contact_phone' => 'téléphone',
             'contact_email' => 'e-mail',
             'contact_address' => 'adresse',

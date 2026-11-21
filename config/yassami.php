@@ -26,6 +26,10 @@ return [
         'address' => env('YASSAMI_CONTACT_ADDRESS'),
     ],
 
+    // Frais de livraison, prix unique pour tout le Maroc (DH). Vide = « à confirmer », 0 = gratuite.
+    // Valeur initiale seulement : se règle dans /admin/parametres (App\Support\Delivery).
+    'delivery_fee' => env('YASSAMI_DELIVERY_FEE'),
+
     'social' => array_filter([
         'instagram' => env('YASSAMI_INSTAGRAM_URL'),
         'facebook' => env('YASSAMI_FACEBOOK_URL'),

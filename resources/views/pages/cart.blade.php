@@ -29,7 +29,7 @@
                                         <p class="mt-1 text-sm text-muted" x-text="[item.size && `Taille ${item.size}`, item.color && `Couleur ${item.color}`].filter(Boolean).join(' · ')"></p>
                                         <p class="mt-1 text-sm tabular-nums" x-text="$store.cart.format(item.price)"></p>
                                     </div>
-                                    <span class="font-semibold tabular-nums" x-text="$store.cart.format(item.price * item.quantity)"></span>
+                                    <span class="whitespace-nowrap font-semibold tabular-nums" x-text="$store.cart.format(item.price * item.quantity)"></span>
                                 </div>
                                 <div class="mt-auto flex items-center justify-between pt-3">
                                     <div class="flex h-10 items-center border border-line bg-white">
@@ -98,12 +98,13 @@
                                 <dd class="tabular-nums" x-text="$store.cart.format($store.cart.subtotal)"></dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-muted">Livraison</dt>
-                                <dd class="text-muted">À confirmer avec vous</dd>
+                                <dt class="text-muted">Livraison <span class="text-xs">(tout le Maroc)</span></dt>
+                                <dd class="tabular-nums" :class="!$store.cart.hasDeliveryFee && 'text-muted'"
+                                    x-text="$store.cart.hasDeliveryFee ? $store.cart.deliveryLabel : 'À confirmer avec vous'"></dd>
                             </div>
                             <div class="flex items-baseline justify-between border-t border-line pt-3">
-                                <dt class="font-semibold">Sous-total</dt>
-                                <dd class="text-xl font-semibold tabular-nums" x-text="$store.cart.format($store.cart.subtotal)"></dd>
+                                <dt class="font-semibold" x-text="$store.cart.hasDeliveryFee ? 'Total' : 'Sous-total'"></dt>
+                                <dd class="text-xl font-semibold tabular-nums" x-text="$store.cart.format($store.cart.total)"></dd>
                             </div>
                         </dl>
 
@@ -118,7 +119,7 @@
                             <span x-text="submitting ? 'Envoi en cours…' : 'Valider ma commande'"></span>
                         </button>
                         <p class="text-center text-xs leading-relaxed text-muted">
-                            Aucun paiement en ligne. Notre équipe vous contacte pour confirmer la commande et les frais de livraison.
+                            Aucun paiement en ligne. Notre équipe vous contacte pour confirmer la commande<span x-show="!$store.cart.hasDeliveryFee"> et les frais de livraison</span>.
                         </p>
                     </form>
                 </div>

@@ -29,9 +29,17 @@ function load() {
 
 const lineKey = (productId, size, color) => `${productId}|${size ?? ''}|${color ?? ''}`;
 
+/** Frais de livraison publiés par le layout (<meta name="yassami-delivery-fee">) ; null = à confirmer. */
+function readDeliveryFee() {
+    const raw = document.querySelector('meta[name="yassami-delivery-fee"]')?.content ?? '';
+    const value = Number.parseFloat(raw);
+    return raw !== '' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 export default function cartStore() {
     return {
         items: load(),
+        deliveryFee: readDeliveryFee(),
         drawerOpen: false,
         toast: null,
         toastTimer: null,
@@ -57,6 +65,21 @@ export default function cartStore() {
 
         get subtotal() {
             return this.items.reduce((s, i) => s + i.price * i.quantity, 0);
+        },
+
+        /** Prix de livraison connu (fixe ou gratuit) ? Sinon « à confirmer ». */
+        get hasDeliveryFee() {
+            return this.deliveryFee !== null;
+        },
+
+        /** « 35 DH », « Gratuite » ou « À confirmer » — identique à App\Support\Delivery::label(). */
+        get deliveryLabel() {
+            if (this.deliveryFee === null) return 'À confirmer';
+            return this.deliveryFee === 0 ? 'Gratuite' : formatMAD(this.deliveryFee);
+        },
+
+        get total() {
+            return this.subtotal + (this.deliveryFee ?? 0);
         },
 
         /** @param {{productId:number, slug:string, name:string, image:?string, price:number, size:?string, color:?string, stock:number}} product */

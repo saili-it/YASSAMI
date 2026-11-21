@@ -86,6 +86,36 @@ class AdminSettingsTest extends TestCase
         $this->assertSame(0, Setting::count());
     }
 
+    public function test_delivery_fee_is_saved_and_shown_on_the_storefront(): void
+    {
+        config(['yassami.delivery_fee' => null]);
+
+        $this->actingAsAdmin()->put(route('admin.settings.update'), $this->payload(['delivery_fee' => '35,50 DH']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('35.50', Setting::where('key', 'delivery_fee')->value('value'));
+        $this->get(route('admin.settings.edit'))->assertSee('Actuellement : 35,50 DH');
+        $this->get(route('home'))->assertOk()
+            ->assertSee('Partout au Maroc pour 35,50 DH')
+            ->assertSee('<meta name="yassami-delivery-fee" content="35.5">', false);
+
+        // 0 = gratuite ; vide = à confirmer.
+        $this->put(route('admin.settings.update'), $this->payload(['delivery_fee' => '0']))->assertSessionHasNoErrors();
+        $this->get(route('home'))->assertSee('Livraison gratuite partout au Maroc');
+
+        $this->put(route('admin.settings.update'), $this->payload(['delivery_fee' => '']))->assertSessionHasNoErrors();
+        $this->get(route('home'))->assertSee('Délais et frais de livraison confirmés')
+            ->assertSee('<meta name="yassami-delivery-fee" content="">', false);
+    }
+
+    public function test_invalid_delivery_fee_is_rejected(): void
+    {
+        foreach (['-5', 'abc', '100000'] as $value) {
+            $this->actingAsAdmin()->put(route('admin.settings.update'), $this->payload(['delivery_fee' => $value]))
+                ->assertSessionHasErrors('delivery_fee');
+        }
+    }
+
     public function test_clearing_a_field_in_admin_overrides_env_and_hides_it(): void
     {
         config(['yassami.whatsapp_number' => '212600000000']); // valeur venant du .env

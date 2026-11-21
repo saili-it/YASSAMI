@@ -165,6 +165,18 @@
                             <button type="button" class="btn btn-primary btn-lg w-full" disabled>Rupture de stock</button>
                         @endif
                     </div>
+
+                    @php $deliveryFee = \App\Support\Delivery::fee(); @endphp
+                    @if ($deliveryFee !== null)
+                        <p class="flex items-center gap-2.5 text-sm">
+                            <x-icon name="truck" class="size-4 shrink-0" />
+                            @if ($deliveryFee == 0)
+                                <span><strong class="font-semibold">Livraison gratuite</strong> partout au Maroc</span>
+                            @else
+                                <span>Livraison partout au Maroc : <strong class="font-semibold tabular-nums">{{ mad($deliveryFee) }}</strong></span>
+                            @endif
+                        </p>
+                    @endif
                 </div>
 
                 @if ($product->description)

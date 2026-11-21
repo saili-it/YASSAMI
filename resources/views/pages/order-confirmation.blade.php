@@ -21,7 +21,7 @@
                 <p class="font-semibold">Prochaine étape</p>
                 <p class="mt-1 text-muted">
                     Notre équipe vous contacte au <strong class="font-semibold text-ink tabular-nums">{{ $order->phone_display }}</strong>
-                    pour confirmer votre commande et les frais de livraison. Aucun paiement n’a été effectué en ligne.
+                    pour confirmer votre commande{{ $order->delivery_fee === null ? ' et les frais de livraison' : '' }}. Aucun paiement n’a été effectué en ligne.
                 </p>
             </div>
         </div>
@@ -44,12 +44,18 @@
             </ul>
             <dl class="space-y-2 border-t border-line px-5 py-4 text-sm sm:px-6">
                 <div class="flex justify-between">
+                    <dt class="text-muted">Articles</dt>
+                    <dd class="tabular-nums">{{ mad($order->subtotal) }}</dd>
+                </div>
+                <div class="flex justify-between">
                     <dt class="text-muted">Livraison</dt>
-                    <dd class="text-muted">À confirmer avec vous</dd>
+                    <dd @class(['tabular-nums', 'text-muted' => $order->delivery_fee === null])>
+                        {{ $order->delivery_fee === null ? 'À confirmer avec vous' : \App\Support\Delivery::label($order->delivery_fee) }}
+                    </dd>
                 </div>
                 <div class="flex items-baseline justify-between border-t border-line pt-3">
-                    <dt class="font-semibold">Total articles</dt>
-                    <dd class="text-xl font-semibold tabular-nums">{{ mad($order->subtotal) }}</dd>
+                    <dt class="font-semibold">{{ $order->delivery_fee === null ? 'Total articles' : 'Total' }}</dt>
+                    <dd class="text-xl font-semibold tabular-nums">{{ mad($order->total) }}</dd>
                 </div>
             </dl>
             <div class="border-t border-line px-5 py-4 text-sm sm:px-6">

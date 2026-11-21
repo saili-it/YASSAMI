@@ -124,6 +124,39 @@ class OrderTest extends TestCase
             ->assertJsonValidationErrors(['items.0']);
     }
 
+    public function test_fixed_delivery_fee_is_added_and_frozen_on_the_order(): void
+    {
+        config(['yassami.delivery_fee' => '35']);
+
+        $this->postJson(route('orders.store'), $this->payload())->assertCreated();
+
+        $order = Order::sole();
+        $this->assertSame(35.0, (float) $order->delivery_fee);
+        $this->assertSame(335.0, $order->total); // 2 × 150 + 35
+
+        $this->get(route('orders.confirmation'))->assertOk()
+            ->assertSee('35 DH')
+            ->assertSee('335 DH')
+            ->assertDontSee('et les frais de livraison');
+
+        // Changer le réglage ne modifie pas les commandes déjà passées.
+        config(['yassami.delivery_fee' => '50']);
+        $this->assertSame(35.0, (float) $order->fresh()->delivery_fee);
+    }
+
+    public function test_free_delivery_and_unset_delivery(): void
+    {
+        config(['yassami.delivery_fee' => '0']);
+        $this->postJson(route('orders.store'), $this->payload())->assertCreated();
+        $this->assertSame(0.0, (float) Order::latest('id')->first()->delivery_fee);
+        $this->get(route('orders.confirmation'))->assertSee('Gratuite');
+
+        config(['yassami.delivery_fee' => null]);
+        $this->postJson(route('orders.store'), $this->payload(['items' => [['quantity' => 1]]]))->assertCreated();
+        $this->assertNull(Order::latest('id')->first()->delivery_fee);
+        $this->get(route('orders.confirmation'))->assertSee('À confirmer avec vous')->assertSee('et les frais de livraison');
+    }
+
     public function test_ordering_works_without_any_whatsapp_number(): void
     {
         config(['yassami.whatsapp_number' => '']);

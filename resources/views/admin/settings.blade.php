@@ -18,13 +18,46 @@
 @endphp
 
 <x-layouts.admin title="Paramètres">
-    <x-admin.page-header title="Paramètres" subtitle="Coordonnées et réseaux sociaux affichés sur la boutique." />
+    <x-admin.page-header title="Paramètres" subtitle="Livraison, coordonnées et réseaux sociaux affichés sur la boutique." />
 
     <form method="POST" action="{{ route('admin.settings.update') }}" class="grid gap-6 lg:grid-cols-3" novalidate>
         @csrf
         @method('PUT')
 
         <div class="space-y-6 lg:col-span-2">
+            {{-- Livraison --}}
+            @php
+                $fee = $values['delivery_fee'];
+                $feeDisplay = is_numeric($fee) ? rtrim(rtrim(number_format((float) $fee, 2, ',', ''), '0'), ',') : '';
+            @endphp
+            <section class="bg-white p-5 ring-1 ring-line sm:p-6">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-semibold uppercase tracking-[0.08em]">Livraison</h2>
+                        <p class="mt-1 text-xs text-muted">Prix unique pour tout le Maroc, ajouté au total de chaque commande.</p>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 bg-bone px-2.5 py-1 text-xs font-semibold">
+                        <x-icon name="truck" class="size-3.5" /> Actuellement : {{ \App\Support\Delivery::label(is_numeric($fee) ? $fee : null) }}
+                    </span>
+                </div>
+
+                <div class="mt-5 max-w-xs">
+                    <label for="delivery_fee" class="field-label">Frais de livraison</label>
+                    <div class="flex items-stretch">
+                        <input id="delivery_fee" name="delivery_fee" type="text" inputmode="decimal" maxlength="10"
+                               value="{{ old('delivery_fee', $feeDisplay) }}" placeholder="Ex. 35"
+                               @class(['field rounded-r-none', 'field-invalid' => $errors->has('delivery_fee')])>
+                        <span class="flex items-center border border-l-0 border-line bg-bone px-3 text-sm text-muted">{{ config('yassami.currency') }}</span>
+                    </div>
+                    @error('delivery_fee')<p class="field-error">{{ $message }}</p>@enderror
+                </div>
+                <ul class="mt-3 space-y-1 text-xs text-muted">
+                    <li><strong class="font-semibold text-ink">0</strong> : livraison gratuite.</li>
+                    <li><strong class="font-semibold text-ink">Vide</strong> : frais « à confirmer » avec chaque client.</li>
+                    <li>Le prix est enregistré sur chaque commande au moment où elle est passée : le modifier ne change pas les commandes existantes (ajustables une par une dans Commandes).</li>
+                </ul>
+            </section>
+
             {{-- Commande WhatsApp --}}
             <section class="bg-white p-5 ring-1 ring-line sm:p-6">
                 <h2 class="text-sm font-semibold uppercase tracking-[0.08em]">Contact WhatsApp</h2>

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Product;
+use App\Support\Delivery;
 use App\Support\Phone;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,9 @@ class OrderService
                 'customer_address' => $customer['address'],
                 'items_count' => $lines->sum('quantity'),
                 'subtotal' => round($lines->sum('line_total'), 2),
+                // Prix de livraison en vigueur au moment de la commande (null = à confirmer).
+                // Figé sur la commande : modifier le réglage ne change pas les commandes passées.
+                'delivery_fee' => Delivery::fee(),
             ]);
             $order->forceFill(['reference' => 'YS-'.str_pad((string) $order->id, 6, '0', STR_PAD_LEFT)])->save();
             $order->items()->createMany($lines->all());

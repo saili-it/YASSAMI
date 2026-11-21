@@ -131,10 +131,16 @@
     {{-- ========================================================== AVANTAGES --}}
     <section class="container-brand pt-16 sm:pt-20">
         @php
+            $deliveryFee = \App\Support\Delivery::fee();
+            $deliveryText = match (true) {
+                $deliveryFee === null => 'Délais et frais de livraison confirmés directement avec vous avant l’expédition.',
+                $deliveryFee == 0 => 'Livraison gratuite partout au Maroc. Délais confirmés avec vous avant l’expédition.',
+                default => 'Partout au Maroc pour '.mad($deliveryFee).'. Délais confirmés avec vous avant l’expédition.',
+            };
             $benefits = [
                 ['icon' => 'bag', 'title' => 'Commande en ligne', 'text' => 'Sans création de compte : choisissez vos articles et validez votre commande en une minute.'],
                 ['icon' => 'message', 'title' => 'Confirmation personnalisée', 'text' => 'Taille, couleur et disponibilité sont vérifiées avec vous avant l’expédition.'],
-                ['icon' => 'truck', 'title' => 'Livraison au Maroc', 'text' => 'Délais et frais de livraison confirmés directement avec vous avant l’expédition.'],
+                ['icon' => 'truck', 'title' => 'Livraison au Maroc', 'text' => $deliveryText],
             ];
         @endphp
         <ul class="grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-3">

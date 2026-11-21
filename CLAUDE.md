@@ -18,7 +18,8 @@ Permanent specification and development guide for the YASSAMI e-commerce platfor
 
 ### What the site does NOT do
 - No online payment, no customer accounts, no customer-facing order tracking (yet).
-- No delivery fees, return policy, or delivery delays are shown: they are **not known**. They are "confirmed with the customer" (the admin then records the delivery fee on the order).
+- No return policy or delivery delays are shown: they are **not known** ("confirmed with the customer").
+- **Delivery fee (since 2026-11-21):** one fixed price for all of Morocco, set by the admin in `/admin/parametres` (setting `delivery_fee`, `App\Support\Delivery`). Empty = "À confirmer" (previous behaviour), `0` = "Gratuite", otherwise added to the total in the cart, checkout and confirmation. Never invent this price.
 
 ---
 
@@ -37,7 +38,8 @@ Permanent specification and development guide for the YASSAMI e-commerce platfor
 - `App\Services\OrderService` is the **only** place that creates orders or changes their status.
 - `place()`: inside a transaction, products are locked (`lockForUpdate`), stock is re-checked and decremented, prices come from the DB (`effective_price`), lines are snapshotted (`order_items`: name, SKU, size, color, unit price, quantity, line total) so later product edits/deletions never change past orders. Reference = `YS-` + zero-padded id.
 - Statuses (`App\Enums\OrderStatus`, stored as French values): `nouvelle` → `confirmee` → `expediee` → `livree`, or `annulee`. Cancelling **restores stock**; reactivating a cancelled order reserves it again (refused with a flash error if stock is insufficient).
-- `orders.delivery_fee` is null until the admin enters it ("À confirmer"); `total` = subtotal + delivery fee. `admin_note` is internal only.
+- `orders.delivery_fee` is **snapshotted at placement** from `Delivery::fee()` (null when the setting is empty = "À confirmer"); changing the setting never alters past orders, and the admin can still adjust it per order. `total` = subtotal + delivery fee. `admin_note` is internal only.
+- The cart display reads the fee from `<meta name="yassami-delivery-fee">` (layout) into the Alpine store (`deliveryFee`, `deliveryLabel`, `total`). Display only: the server fee is authoritative.
 - Customer phone is stored as `06XXXXXXXX` (`App\Support\Phone` handles formatting and the `212…` wa.me format).
 - The confirmation page shows only the order id kept in the visitor's session — never an id from the URL.
 
@@ -56,7 +58,7 @@ Custom Blade UI in the brand style (decision 2026-11-10: **custom, not Filament*
 - Products: a product cannot be activated (form or quick toggle) while its price is 0, so a draft can never be ordered for free. CRUD, filters (search, category, status), quick active/featured toggles, up to 10 photos (upload, drag & drop, reorder, delete), sizes (presets + custom), colors (name + color picker + presets), price/sale price with live discount preview, stock.
 - Uploaded images are resized to 1600 px max, EXIF-rotated and converted to WebP (`App\Services\ImageStorage`). Files are stored at `storage/app/public/products/{id}/` and `categories/`. Deleting a product or image deletes the files.
 - Destructive actions always go through a confirmation dialog (`<x-admin.confirm-delete>`).
-- Settings (`/admin/parametres`, added 2026-11-11): WhatsApp contact number (optional, only for the footer "Nous écrire sur WhatsApp" link since 2026-11-18), contact phone/email/address, Instagram/Facebook/TikTok URLs. The WhatsApp number accepts any Moroccan format and is normalized to `212XXXXXXXXX`; the page has a "Tester" link.
+- Settings (`/admin/parametres`, added 2026-11-11): **delivery fee** (fixed price for all of Morocco, accepts `35`, `35,50`, `35 DH`; 0 = free; empty = to confirm), WhatsApp contact number (optional, only for the footer "Nous écrire sur WhatsApp" link since 2026-11-18), contact phone/email/address, Instagram/Facebook/TikTok URLs. The WhatsApp number accepts any Moroccan format and is normalized to `212XXXXXXXXX`; the page has a "Tester" link.
 
 ### Business information — NEVER invent
 WhatsApp number, phone, email, address, social accounts, delivery fees/delays, return policy, real prices.
@@ -188,7 +190,7 @@ app/
   Http/Requests/           StoreOrderRequest · Admin/{LoginRequest, OrderRequest, CategoryRequest, ProductRequest, SettingsRequest}
   Models/                  Category, Product, ProductImage, Order, OrderItem, Setting, User (is_admin, default false)
   Services/                OrderService, ImageStorage (resize/WebP), ProductImageService (sync photos), SiteSettings
-  Support/                 Money (MAD formatting + mad() helper), Slug (unique slugs), Phone (Moroccan numbers)
+  Support/                 Money (MAD formatting + mad() helper), Slug (unique slugs), Phone (Moroccan numbers), Delivery (fixed delivery fee + label)
 lang/fr/                   validation.php, auth.php, pagination.php
 config/yassami.php         ALL business settings (single source of truth)
 database/

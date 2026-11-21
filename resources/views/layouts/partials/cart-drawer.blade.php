@@ -60,11 +60,21 @@
         </ul>
 
         <div x-show="$store.cart.items.length > 0" class="border-t border-line p-5">
-            <div class="flex items-baseline justify-between">
-                <span class="text-sm font-medium">Sous-total</span>
-                <span class="text-lg font-semibold tabular-nums" x-text="$store.cart.format($store.cart.subtotal)"></span>
-            </div>
-            <p class="mt-1 text-xs text-muted">Frais de livraison confirmés avec vous avant l’expédition.</p>
+            <dl class="space-y-1.5 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-muted">Sous-total</dt>
+                    <dd class="tabular-nums" x-text="$store.cart.format($store.cart.subtotal)"></dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-muted">Livraison <span class="text-xs">(tout le Maroc)</span></dt>
+                    <dd class="tabular-nums" :class="!$store.cart.hasDeliveryFee && 'text-muted'" x-text="$store.cart.deliveryLabel"></dd>
+                </div>
+                <div class="flex items-baseline justify-between border-t border-line pt-2">
+                    <dt class="font-medium">Total</dt>
+                    <dd class="text-lg font-semibold tabular-nums" x-text="$store.cart.format($store.cart.total)"></dd>
+                </div>
+            </dl>
+            <p x-show="!$store.cart.hasDeliveryFee" class="mt-1 text-xs text-muted">Frais de livraison confirmés avec vous avant l’expédition.</p>
             <a href="{{ route('cart') }}#commande" class="btn btn-primary btn-lg mt-4 w-full">
                 <x-icon name="check" class="size-4" /> Finaliser la commande
             </a>

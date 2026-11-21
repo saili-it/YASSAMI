@@ -18,6 +18,7 @@ class SiteSettings
     /** Clé en base => clé de configuration. */
     public const MAP = [
         'whatsapp_number' => 'yassami.whatsapp_number',
+        'delivery_fee' => 'yassami.delivery_fee',
         'contact_phone' => 'yassami.contact.phone',
         'contact_email' => 'yassami.contact.email',
         'contact_address' => 'yassami.contact.address',
