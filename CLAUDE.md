@@ -34,6 +34,10 @@ Permanent specification and development guide for the YASSAMI e-commerce platfor
 6. Click **"Valider ma commande"** → the server validates, saves the order, reserves stock → the cart is emptied and the browser goes to `/commande/confirmation` (order number `YS-000123`, recap, "notre équipe vous contacte…").
 7. The admin processes the order in `/admin/commandes` (calls or WhatsApps the customer, sets the status and delivery fee).
 
+**Direct order from the product page (since 2026-11-25):** the product page embeds the order form ("Commander maintenant" section, button "Passer la commande") under the size/color/quantity selectors, so a single product can be ordered without the cart. It is `checkoutForm(endpoint, { direct: true })` nested inside `productForm` (Alpine scopes merge: it reads `product`, `size`, `color`, `quantity`, `validate()`), posts the same `POST /commande` with one line, and **does not touch the cart**. For the same reason the confirmation page no longer clears the cart; only the cart checkout clears it. "Ou ajouter au panier" stays as a secondary button. The customer fields are the shared partial `pages/partials/checkout-fields.blade.php` (cart page + product page).
+
+**Product gallery:** horizontal scroll-snap strip (`[data-gallery]`, swipe on touch, trackpad, ←/→ keys, arrows on `sm+`, thumbnails, dots on mobile, `n / total` counter). `productForm.syncImage()` follows the scroll and `goToImage()` scrolls smoothly (instant when `prefers-reduced-motion`).
+
 ### Orders
 - `App\Services\OrderService` is the **only** place that creates orders or changes their status.
 - `place()`: inside a transaction, products are locked (`lockForUpdate`), stock is re-checked and decremented, prices come from the DB (`effective_price`), lines are snapshotted (`order_items`: name, SKU, size, color, unit price, quantity, line total) so later product edits/deletions never change past orders. Reference = `YS-` + zero-padded id.
@@ -209,7 +213,7 @@ resources/
   views/components/        layouts/{app,admin}, logo, icon, price, product-card, product-media, section-heading
   views/components/admin/  flash, toggle, confirm-delete, page-header, order-status
   views/layouts/partials/  header, footer, mobile-menu, cart-drawer
-  views/pages/             home, shop, product, cart, order-confirmation
+  views/pages/             home, shop, product, cart, order-confirmation · partials/checkout-fields (shared customer fields)
   views/admin/             auth/login, dashboard, settings, orders/{index,show}, categories/{index,form}, products/{index,form}, partials/
 public/images/brand/       Logo variants (logo.png, logo-light.png, mark-light.png), favicons, og-image.jpg
 resources/brand/           Original official logo file (source for the variants)

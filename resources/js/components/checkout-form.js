@@ -1,7 +1,11 @@
 /**
- * Formulaire de commande (page panier).
- * Envoie le panier au serveur, qui valide, recalcule les prix, enregistre la commande
- * et renvoie l'adresse de la page de confirmation.
+ * Formulaire de commande.
+ *   checkoutForm(endpoint)                    → page panier : commande tout le panier
+ *   checkoutForm(endpoint, { direct: true })  → fiche produit : commande CE produit seulement,
+ *                                               avec la taille / couleur / quantité choisies.
+ * En mode direct, le composant est imbriqué dans « productForm » : il lit product, size,
+ * color, quantity et validate() de la portée parente (portées Alpine fusionnées).
+ * Le serveur valide, recalcule les prix, enregistre la commande et renvoie la page de confirmation.
  */
 const CUSTOMER_KEY = 'yassami.customer.v1';
 
@@ -13,7 +17,7 @@ function loadCustomer() {
     }
 }
 
-export default (endpoint) => ({
+export default (endpoint, { direct = false } = {}) => ({
     customer: loadCustomer(),
     errors: {},
     globalErrors: [],
@@ -23,13 +27,37 @@ export default (endpoint) => ({
         return this.errors[`customer.${name}`]?.[0] ?? null;
     },
 
-    async submit() {
-        const cart = this.$store.cart;
-        if (!cart.items.length || this.submitting) return;
+    /** Lignes envoyées au serveur (les prix ne sont jamais envoyés : le serveur les relit). */
+    lineItems() {
+        if (direct) {
+            return [{ product_id: this.product.id, quantity: this.quantity, size: this.size, color: this.color }];
+        }
+        return this.$store.cart.items.map((i) => ({
+            product_id: i.productId,
+            quantity: i.quantity,
+            size: i.size,
+            color: i.color,
+        }));
+    },
 
-        this.submitting = true;
+    async submit() {
+        if (this.submitting) return;
+
         this.errors = {};
         this.globalErrors = [];
+
+        if (direct) {
+            // Taille / couleur manquante : message sous les sélecteurs (productForm.error).
+            this.error = this.validate();
+            if (this.error) {
+                document.querySelector('[data-variants]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+        } else if (!this.$store.cart.items.length) {
+            return;
+        }
+
+        this.submitting = true;
 
         try {
             localStorage.setItem(CUSTOMER_KEY, JSON.stringify(this.customer));
@@ -45,22 +73,14 @@ export default (endpoint) => ({
                     Accept: 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
-                body: JSON.stringify({
-                    customer: this.customer,
-                    items: cart.items.map((i) => ({
-                        product_id: i.productId,
-                        quantity: i.quantity,
-                        size: i.size,
-                        color: i.color,
-                    })),
-                }),
+                body: JSON.stringify({ customer: this.customer, items: this.lineItems() }),
             });
 
             const data = await response.json().catch(() => ({}));
 
             if (response.ok && data.redirect) {
-                // Commande enregistrée : on vide le panier puis on affiche la confirmation.
-                cart.clear();
+                // Panier vidé seulement s'il vient d'être commandé (une commande directe ne touche pas au panier).
+                if (!direct) this.$store.cart.clear();
                 window.location.href = data.redirect;
                 return;
             }

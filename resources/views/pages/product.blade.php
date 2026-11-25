@@ -9,7 +9,6 @@
         'stock' => $product->stock_quantity,
         'sizes' => $product->sizes ?? [],
         'colors' => $product->color_options,
-        'cartUrl' => route('cart'),
     ];
     $jsonLd = [
         '@context' => 'https://schema.org',
@@ -51,23 +50,49 @@
             <div class="lg:col-span-7">
                 <div class="-mx-4 sm:mx-0 lg:sticky lg:top-24">
                     <div class="relative">
-                        @forelse ($images as $i => $image)
-                            <div x-show="activeImage === {{ $i }}" @if ($i > 0) x-cloak @endif>
-                                <x-product-media :product="$product" :image="$image->url" :eager="$i === 0" />
-                            </div>
-                        @empty
+                        @if ($images->isEmpty())
                             <x-product-media :product="$product" eager />
-                        @endforelse
+                        @else
+                            {{-- Bande défilante : glisser au doigt, trackpad, flèches ou miniatures (scroll-snap). --}}
+                            <div x-ref="track" @scroll.debounce.60ms="syncImage($el)" data-gallery
+                                 @keydown.arrow-right.prevent="goToImage(activeImage + 1)" @keydown.arrow-left.prevent="goToImage(activeImage - 1)"
+                                 tabindex="0" role="region" aria-roledescription="carrousel" aria-label="Photos du produit"
+                                 class="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline-offset-[-2px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                @foreach ($images as $i => $image)
+                                    <div class="w-full shrink-0 snap-center snap-always" role="group" aria-label="Photo {{ $i + 1 }} sur {{ $images->count() }}">
+                                        <x-product-media :product="$product" :image="$image->url" :eager="$i === 0" />
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
 
                         @if ($product->has_discount)
-                            <span class="absolute left-4 top-4 bg-accent px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] text-white">−{{ $product->discount_percent }}%</span>
+                            <span class="pointer-events-none absolute left-4 top-4 bg-accent px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] text-white">−{{ $product->discount_percent }}%</span>
                         @endif
 
                         @if ($images->count() > 1)
+                            {{-- Compteur --}}
+                            <span class="pointer-events-none absolute right-4 top-4 bg-ink/70 px-2 py-1 text-xs font-semibold tabular-nums text-paper">
+                                <span x-text="activeImage + 1">1</span>&nbsp;/&nbsp;{{ $images->count() }}
+                            </span>
+
+                            {{-- Flèches (écrans avec souris) --}}
+                            <button type="button" x-cloak x-show="activeImage > 0" x-transition.opacity @click="goToImage(activeImage - 1)"
+                                    class="absolute left-3 top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center bg-paper/90 text-ink shadow-md transition hover:bg-paper sm:flex"
+                                    aria-label="Photo précédente">
+                                <x-icon name="chevron-left" class="size-5" />
+                            </button>
+                            <button type="button" x-show="activeImage < {{ $images->count() - 1 }}" x-transition.opacity @click="goToImage(activeImage + 1)"
+                                    class="absolute right-3 top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center bg-paper/90 text-ink shadow-md transition hover:bg-paper sm:flex"
+                                    aria-label="Photo suivante">
+                                <x-icon name="chevron-right" class="size-5" />
+                            </button>
+
+                            {{-- Points (mobile) --}}
                             <div class="absolute inset-x-0 bottom-4 flex justify-center gap-1.5 sm:hidden">
                                 @foreach ($images as $i => $image)
                                     <button type="button" class="h-1 w-6 transition-colors" :class="activeImage === {{ $i }} ? 'bg-ink' : 'bg-ink/25'"
-                                            @click="activeImage = {{ $i }}" aria-label="Image {{ $i + 1 }}"></button>
+                                            @click="goToImage({{ $i }})" aria-label="Photo {{ $i + 1 }}"></button>
                                 @endforeach
                             </div>
                         @endif
@@ -78,7 +103,7 @@
                             @foreach ($images as $i => $image)
                                 <button type="button" class="relative aspect-[4/5] overflow-hidden bg-bone ring-offset-2 ring-offset-paper transition"
                                         :class="activeImage === {{ $i }} ? 'ring-2 ring-ink' : 'opacity-70 hover:opacity-100'"
-                                        @click="activeImage = {{ $i }}" aria-label="Afficher l’image {{ $i + 1 }}">
+                                        @click="goToImage({{ $i }})" aria-label="Afficher la photo {{ $i + 1 }}">
                                     <img src="{{ $image->url }}" alt="" loading="lazy" class="size-full object-cover">
                                 </button>
                             @endforeach
@@ -103,7 +128,7 @@
                     @endif
                 </p>
 
-                <div class="mt-8 space-y-7 border-t border-line pt-7">
+                <div class="mt-8 space-y-7 border-t border-line pt-7" data-variants>
                     {{-- Couleurs --}}
                     @if (count($payload['colors']))
                         <fieldset>
@@ -154,31 +179,62 @@
 
                     <p x-cloak x-show="error" x-text="error" role="alert" class="flex items-center gap-2 text-sm font-medium text-accent"></p>
 
-                    <div class="flex flex-col gap-3">
-                        @if ($product->in_stock)
-                            <button type="button" class="btn btn-primary btn-lg w-full" @click="addToCart()">
-                                <x-icon name="bag" class="size-4" /> Ajouter au panier
-                            </button>
-                            <button type="button" class="btn btn-outline btn-lg w-full" @click="orderNow()">
-                                Commander maintenant <x-icon name="arrow-right" class="size-4" />
-                            </button>
-                        @else
-                            <button type="button" class="btn btn-primary btn-lg w-full" disabled>Rupture de stock</button>
-                        @endif
-                    </div>
-
-                    @php $deliveryFee = \App\Support\Delivery::fee(); @endphp
-                    @if ($deliveryFee !== null)
-                        <p class="flex items-center gap-2.5 text-sm">
-                            <x-icon name="truck" class="size-4 shrink-0" />
-                            @if ($deliveryFee == 0)
-                                <span><strong class="font-semibold">Livraison gratuite</strong> partout au Maroc</span>
-                            @else
-                                <span>Livraison partout au Maroc : <strong class="font-semibold tabular-nums">{{ mad($deliveryFee) }}</strong></span>
-                            @endif
-                        </p>
-                    @endif
+                    @unless ($product->in_stock)
+                        <button type="button" class="btn btn-primary btn-lg w-full" disabled>Rupture de stock</button>
+                    @endunless
                 </div>
+
+                @if ($product->in_stock)
+                    {{-- -------------------------------- Commande directe (ce produit seulement) --}}
+                    <section id="commander" class="mt-8 scroll-mt-28" aria-labelledby="direct-order-title"
+                             x-data="checkoutForm(@js(route('orders.store')), { direct: true })">
+                        <div class="bg-white p-5 ring-1 ring-line sm:p-6">
+                            <h2 id="direct-order-title" class="display text-[1.75rem]">Commander maintenant</h2>
+                            <p class="mt-1 text-sm text-muted">Remplissez vos coordonnées : nous vous contactons pour confirmer avant l’expédition.</p>
+
+                            <form class="mt-5 space-y-4" @submit.prevent="submit()" novalidate data-direct-order>
+                                @include('pages.partials.checkout-fields')
+
+                                <dl class="space-y-2 border-t border-line pt-4 text-sm">
+                                    <div class="flex justify-between gap-4">
+                                        <dt class="text-muted">
+                                            Article<span x-show="quantity > 1"> × <span x-text="quantity"></span></span>
+                                            <span class="block text-xs" x-show="size || color" x-text="[size && `Taille ${size}`, color].filter(Boolean).join(' · ')"></span>
+                                        </dt>
+                                        <dd class="whitespace-nowrap tabular-nums" x-text="$store.cart.format(lineTotal)"></dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-muted">Livraison <span class="text-xs">(tout le Maroc)</span></dt>
+                                        <dd class="tabular-nums" :class="!$store.cart.hasDeliveryFee && 'text-muted'"
+                                            x-text="$store.cart.hasDeliveryFee ? $store.cart.deliveryLabel : 'À confirmer avec vous'"></dd>
+                                    </div>
+                                    <div class="flex items-baseline justify-between border-t border-line pt-3">
+                                        <dt class="font-semibold" x-text="$store.cart.hasDeliveryFee ? 'Total' : 'Sous-total'"></dt>
+                                        <dd class="text-xl font-semibold tabular-nums" x-text="$store.cart.format(lineTotal + ($store.cart.deliveryFee ?? 0))"></dd>
+                                    </div>
+                                </dl>
+
+                                <div x-cloak x-show="globalErrors.length" role="alert" class="flex gap-3 bg-accent/10 p-4 text-sm text-accent-strong">
+                                    <x-icon name="alert" class="mt-0.5 size-4" />
+                                    <ul class="space-y-1"><template x-for="msg in globalErrors"><li x-text="msg"></li></template></ul>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-lg w-full" :disabled="submitting">
+                                    <x-icon name="check" class="size-5" x-show="!submitting" />
+                                    <svg x-show="submitting" x-cloak class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="42 100" /></svg>
+                                    <span x-text="submitting ? 'Envoi en cours…' : 'Passer la commande'">Passer la commande</span>
+                                </button>
+                                <p class="text-center text-xs leading-relaxed text-muted">
+                                    Aucun paiement en ligne. Notre équipe vous contacte pour confirmer la commande<span x-show="!$store.cart.hasDeliveryFee"> et les frais de livraison</span>.
+                                </p>
+                            </form>
+                        </div>
+
+                        <button type="button" class="btn btn-outline btn-md mt-3 w-full" @click="addToCart()">
+                            <x-icon name="bag" class="size-4" /> Ou ajouter au panier
+                        </button>
+                    </section>
+                @endif
 
                 @if ($product->description)
                     <div class="mt-10 border-t border-line pt-7">

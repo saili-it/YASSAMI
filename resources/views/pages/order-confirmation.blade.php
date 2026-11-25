@@ -3,8 +3,9 @@
 @endpush
 
 <x-layouts.app :title="'Commande '.$order->reference" description="Confirmation de votre commande.">
-    {{-- Sécurité : le panier est déjà vidé par le formulaire, on s'en assure ici aussi. --}}
-    <div class="container-brand max-w-3xl pt-10 sm:pt-16" x-data x-init="$store.cart.clear()">
+    {{-- Le panier est vidé par le formulaire du panier uniquement : une commande directe
+         depuis une fiche produit ne doit pas effacer les autres articles du panier. --}}
+    <div class="container-brand max-w-3xl pt-10 sm:pt-16">
         <div class="flex flex-col items-center text-center animate-fade-up">
             <span class="flex size-16 items-center justify-center bg-ink text-paper">
                 <x-icon name="check" class="size-8" />

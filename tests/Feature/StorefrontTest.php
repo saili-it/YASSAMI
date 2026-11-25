@@ -42,6 +42,30 @@ class StorefrontTest extends TestCase
         $this->get(route('cart'))->assertOk();
     }
 
+    public function test_product_page_has_scrollable_gallery_and_direct_order_form(): void
+    {
+        $product = $this->product('Legging Alpha', 300);
+        $product->images()->createMany([
+            ['path' => 'products/1/a.webp', 'sort_order' => 0],
+            ['path' => 'products/1/b.webp', 'sort_order' => 1],
+        ]);
+
+        $this->get(route('products.show', $product))->assertOk()
+            ->assertSee('data-gallery', false)
+            ->assertSee('Photo 2 sur 2')
+            ->assertSee('data-direct-order', false)
+            ->assertSee('Passer la commande')
+            ->assertSee('checkout-phone', false)
+            ->assertSee('Ou ajouter au panier')
+            ->assertDontSee('orderNow');
+
+        // Produit en rupture : pas de formulaire de commande.
+        $product->update(['stock_quantity' => 0]);
+        $this->get(route('products.show', $product))->assertOk()
+            ->assertDontSee('data-direct-order', false)
+            ->assertSee('Rupture de stock');
+    }
+
     public function test_floating_whatsapp_button(): void
     {
         $product = $this->product('Legging Alpha', 300);
